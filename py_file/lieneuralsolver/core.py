@@ -1,14 +1,11 @@
+# Importing the necessary packages
 import autograd.numpy as np
 from autograd import grad
 from autograd import elementwise_grad as egrad
-
-
 import autograd.numpy.random as npr
 from autograd.misc.flatten import flatten
-
 from scipy.optimize import minimize
 from scipy.integrate import solve_ivp
-
 from matplotlib import pyplot as plt
 from matplotlib import animation, rc
 from IPython.display import HTML
@@ -18,7 +15,7 @@ from math import sqrt
 
 count = 0
 
-
+# Initialize neural network parameters
 def init_weights(n_in=1, n_hidden=10, n_out=1):
     W1 = npr.randn(n_in, n_hidden)
     b1 = np.zeros(n_hidden)
@@ -27,7 +24,7 @@ def init_weights(n_in=1, n_hidden=10, n_out=1):
     params = [W1, b1, W2, b2]
     return params
 
-
+# Construct \hat{u}_1 neural network solution
 def predict1(params, t, act=np.tanh):
     W1, b1, W2, b2 = params
 
@@ -39,6 +36,7 @@ def predict1(params, t, act=np.tanh):
     y = y0_1lie + t*out
     return y
 
+# Construct \hat{u}_2 neural network solution
 def predict2(params, t, act=np.tanh):
     W1, b1, W2, b2 = params
 
@@ -50,6 +48,7 @@ def predict2(params, t, act=np.tanh):
     y = y0_2lie + t*out
     return y
 
+# Construct \hat{u}_3 neural network solution
 def predict3(params, t, act=np.tanh):
     W1, b1, W2, b2 = params
 
@@ -61,17 +60,13 @@ def predict3(params, t, act=np.tanh):
     y = y0_3lie + t*out
     return y
 
-predict1_dt = egrad(predict1, argnum=1)
+predict1_dt = egrad(predict1, argnum=1)     #\hat{u}_1/dt   t is \xi
 
+predict2_dt = egrad(predict2, argnum=1)     #\hat{u}_2/dt   t is \xi
 
-predict2_dt = egrad(predict2, argnum=1)
+predict3_dt = egrad(predict3, argnum=1)     #\hat{u}_3/dt   t is \xi
 
-
-predict3_dt = egrad(predict3, argnum=1)
-
-
-
-
+# NNSolver
 class NNSolver(object):
     def __init__(self, f, t, y0_list, n_hidden=10):
         Nvar = len(y0_list)
@@ -129,6 +124,7 @@ class NNSolver(object):
     def loss_wrap(self, flattened_params):
         return self.loss_func(params_list)
 
+    # Training process  BFGS optimization algorithm
     def train(self, method='BFGS', maxiter=2000, iprint=200):
         self.x = []
 
@@ -154,8 +150,7 @@ class NNSolver(object):
         self.flattened_params = opt.x
         self.params_list = self.unflat_func(opt.x)
 
-
-
+    # Define the network solution \hat{u}
     def predict(self, t=None, params_list=None):
 
         if t is None:
@@ -192,7 +187,7 @@ class NNSolver(object):
 
             return y_pred_list
 
-
+    # Animation Show
     def result(self,t = None, anim = False, interval = 50, every_n_iter = 1):
         if t is None:
             t = self.t
@@ -245,10 +240,11 @@ class NNSolver(object):
 
             return anim_pred
 
+# Define the loss function and iteration count image
     def plot_loss(self):
-        plt.figure(figsize=(8,6))
-        plt.semilogy(range(len(loss_arr)), loss_arr, label="BFGS")
-        plt.legend(loc='best')
-        plt.xlabel("Training Iterations")
-        plt.ylabel("Log Loss")
-        plt.show()
+            plt.figure(figsize=(8, 6))
+            plt.semilogy(range(len(loss_arr)), loss_arr, label="BFGS")
+            plt.legend(loc='best')
+            plt.xlabel("Training Iterations")
+            plt.ylabel("Log Loss")
+            plt.show()
